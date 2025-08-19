@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .captcha-container {
+    @apply bg-white border border-captcha-border rounded-lg shadow-captcha p-6 max-w-md mx-auto;
+  }
+  
+  .captcha-button {
+    @apply px-4 py-2 bg-captcha-primary text-white rounded-md hover:bg-blue-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+  
+  .captcha-button-secondary {
+    @apply px-4 py-2 bg-captcha-secondary text-white rounded-md hover:bg-slate-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2;
+  }
+  
+  .captcha-input {
+    @apply w-full px-3 py-2 border border-captcha-border rounded-md focus:outline-none focus:ring-2 focus:ring-captcha-primary focus:border-transparent;
+  }
+  
+  .captcha-puzzle-item {
+    @apply cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md;
+  }
+  
+  .captcha-success {
+    @apply text-captcha-success border-captcha-success;
+  }
+  
+  .captcha-error {
+    @apply text-captcha-error border-captcha-error;
+  }
+  
+  .captcha-loading {
+    @apply animate-pulse-slow;
+  }
+}

@@ -1,65 +1,61 @@
 {
   "name": "nexcaptcha",
   "version": "1.0.0",
-  "description": "A robust multi-layer CAPTCHA solution with invisible filters, proof-of-work, and interactive UX challenges. Are you a robot? by nexwinds.com",
+  "description": "A multi-layer CAPTCHA solution for Next.js with Tailwind CSS",
   "main": "dist/index.js",
-  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    },
-    "./styles": "./dist/styles.css"
-  },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "lint": "eslint src --ext .ts,.tsx --fix",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && npm run build:css",
+    "build:css": "tailwindcss -i ./src/styles/input.css -o ./dist/styles.css --minify",
+    "dev": "tsc --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
     "captcha",
-    "security",
+    "nextjs",
     "react",
+    "security",
+    "tailwindcss",
     "typescript",
-    "proof-of-work",
-    "bot-detection",
-    "nexwinds"
+    "behavioral-analysis",
+    "proof-of-work"
   ],
-  "author": "nexwinds.com",
+  "author": "Your Name",
   "license": "MIT",
-  "homepage": "https://nexwinds.com",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nexwinds/nexcaptcha.git"
-  },
-  "type": "module",
   "peerDependencies": {
-    "react": ">=16.8.0"
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0",
+    "next": ">=12.0.0"
+  },
+  "dependencies": {
+    "clsx": "^2.0.0",
+    "framer-motion": "^10.16.0"
   },
   "devDependencies": {
-    "@types/react": "^19.1.10",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "eslint": "^8.0.0",
-    "eslint-plugin-import": "^2.0.0",
-    "eslint-plugin-jsx-a11y": "^6.0.0",
-    "eslint-plugin-react": "^7.0.0",
-    "eslint-plugin-react-hooks": "^4.0.0",
-    "eslint-plugin-security": "^1.0.0",
-    "eslint-plugin-unicorn": "^48.0.0",
-    "eslint-plugin-unused-imports": "^3.0.0",
-    "react": "^19.1.1",
-    "tsup": "^8.5.0",
-    "typescript": "^5.9.2"
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.0.0"
   },
-  "dependencies": {
-    "lint": "^0.8.19"
-  }
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/nexcaptcha.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/nexcaptcha/issues"
+  },
+  "homepage": "https://github.com/yourusername/nexcaptcha#readme"
 }
