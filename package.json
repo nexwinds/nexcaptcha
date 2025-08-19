@@ -1,0 +1,65 @@
+{
+  "name": "nexcaptcha",
+  "version": "1.0.0",
+  "description": "A robust multi-layer CAPTCHA solution with invisible filters, proof-of-work, and interactive UX challenges. Are you a robot? by nexwinds.com",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./styles": "./dist/styles.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src --ext .ts,.tsx --fix",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "captcha",
+    "security",
+    "react",
+    "typescript",
+    "proof-of-work",
+    "bot-detection",
+    "nexwinds"
+  ],
+  "author": "nexwinds.com",
+  "license": "MIT",
+  "homepage": "https://nexwinds.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nexwinds/nexcaptcha.git"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "react": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.10",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-import": "^2.0.0",
+    "eslint-plugin-jsx-a11y": "^6.0.0",
+    "eslint-plugin-react": "^7.0.0",
+    "eslint-plugin-react-hooks": "^4.0.0",
+    "eslint-plugin-security": "^1.0.0",
+    "eslint-plugin-unicorn": "^48.0.0",
+    "eslint-plugin-unused-imports": "^3.0.0",
+    "react": "^19.1.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "lint": "^0.8.19"
+  }
+}
