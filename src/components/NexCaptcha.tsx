@@ -325,7 +325,7 @@ export const NexCaptcha: React.FC<NexCaptchaProps> = ({
         return <DragDropPuzzle {...puzzleProps} />;
       case 'emoji-selection':
         return <EmojiSelectionPuzzle {...puzzleProps} />;
-      case 'slider-puzzle':
+      case 'slider':
         return <SliderPuzzle {...puzzleProps} />;
       case 'number-sorting':
         return <NumberSortingPuzzle {...puzzleProps} />;
@@ -355,17 +355,28 @@ export const NexCaptcha: React.FC<NexCaptchaProps> = ({
 
   return (
     <div ref={containerRef} className={`nexcaptcha-container ${className}`}>
-      {/* Trigger Button */}
-      <button
-        className={`nexcaptcha-trigger-button px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 transition-colors font-medium ${getThemeClasses()} ${
-          disabled ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
-        onClick={startChallenge}
-        disabled={disabled}
-        aria-label="Start CAPTCHA verification"
-      >
-        {'Verify I\'m Human'}
-      </button>
+      {/* Checkbox-style Trigger */}
+      <div className="bg-white border border-gray-300 rounded-md p-4 shadow-sm hover:shadow-md transition-shadow">
+        <button
+          className={`flex items-center space-x-3 w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-400 rounded ${
+            disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+          }`}
+          onClick={startChallenge}
+          disabled={disabled}
+          aria-label="I'm not a robot - Start CAPTCHA verification"
+        >
+          <div className="flex-shrink-0">
+            <div className="w-6 h-6 border-2 border-gray-400 rounded bg-white flex items-center justify-center hover:border-blue-500 transition-colors">
+              <svg className="w-4 h-4 text-green-600 hidden" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <span className="text-gray-700 font-medium select-none">
+            I'm not a robot
+          </span>
+        </button>
+      </div>
 
       {/* Modal */}
       {state.isVisible && (
@@ -491,3 +502,33 @@ export const useNexCaptcha = (config: CaptchaConfig) => {
     reset,
   };
 };
+
+// Simplified component for minimal usage (under 10 lines)
+export const SimpleCaptcha: React.FC<{
+  onVerify?: (success: boolean) => void;
+  className?: string;
+}> = ({ onVerify, className }) => {
+  return (
+    <NexCaptcha
+      config={{
+        enableBehavioralAnalysis: true,
+        enableProofOfWork: true,
+        enableInteractivePuzzles: true,
+        difficulty: 5, // High difficulty (1-5 scale)
+      }}
+      onComplete={(result) => onVerify?.(true)}
+      onError={() => onVerify?.(false)}
+      className={className}
+    />
+  );
+};
+
+// Export optimized configuration for advanced users
+export const OPTIMIZED_CONFIG = {
+  enableBehavioralAnalysis: true,
+  enableProofOfWork: true,
+  enableInteractivePuzzles: true,
+  difficulty: 5, // High difficulty (1-5 scale)
+};
+
+// Exports are already declared above

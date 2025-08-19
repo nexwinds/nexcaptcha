@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { DragDropChallengeData, CaptchaTheme } from '../../types/index';
+import { DragDropChallengeData, CaptchaTheme, PuzzlePiece, PuzzleSlot } from '../../types/index';
 
 interface DragDropPuzzleProps {
   /** Challenge data containing items and target positions */
@@ -19,21 +19,7 @@ interface DragDropPuzzleProps {
   disabled?: boolean;
 }
 
-interface DragItem {
-  id: string;
-  content: string;
-  position: { x: number; y: number };
-  isDragging: boolean;
-  isPlaced: boolean;
-}
 
-interface DropZone {
-  id: string;
-  position: { x: number; y: number };
-  size: { width: number; height: number };
-  expectedItemId: string;
-  hasItem: boolean;
-}
 
 /**
  * Drag and Drop Puzzle Component
@@ -45,9 +31,9 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
   onInteraction,
   disabled = false,
 }) => {
-  const [dragItems, setDragItems] = useState<DragItem[]>([]);
-  const [dropZones, setDropZones] = useState<DropZone[]>([]);
-  const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [puzzlePieces, setPuzzlePieces] = useState<PuzzlePiece[]>([]);
+  const [puzzleSlots, setPuzzleSlots] = useState<PuzzleSlot[]>([]);
+  const [draggedPiece, setDraggedPiece] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [startTime] = useState(Date.now());
   const [isCompleted, setIsCompleted] = useState(false);
@@ -55,37 +41,26 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   /**
-   * Initialize puzzle items and zones
+   * Initialize puzzle from challenge data
    */
   useEffect(() => {
-    const items: DragItem[] = challenge.items.map((item, index) => ({
-      id: item.id,
-      content: item.content,
-      position: {
-        x: 50 + (index % 3) * 120,
-        y: 50 + Math.floor(index / 3) * 80,
-      },
-      isDragging: false,
-      isPlaced: false,
-    }));
-
-    const zones: DropZone[] = challenge.targets.map((target, index) => ({
-      id: target.id,
-      position: { x: index * 100, y: 0 },
-      size: { width: 100, height: 60 },
-      expectedItemId: Object.keys(challenge.correctMappings).find(key => challenge.correctMappings[key] === target.id) || '',
-      hasItem: false,
-    }));
-
-    setDragItems(items);
-    setDropZones(zones);
-  }, [challenge]);
+    if (!challenge || !challenge.puzzlePieces || !challenge.puzzleSlots) return;
+    
+    // Use challenge data from ChallengeManager
+    setPuzzlePieces([...challenge.puzzlePieces]);
+    setPuzzleSlots([...challenge.puzzleSlots]);
+    
+    onInteraction?.('puzzle_initialized', {
+      pieceCount: challenge.puzzlePieces.length,
+      slotCount: challenge.puzzleSlots.length,
+    });
+  }, [challenge, onInteraction]);
 
   /**
-   * Handle mouse down on drag item
+   * Handle mouse down on puzzle piece
    */
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent, itemId: string) => {
+    (e: React.MouseEvent, pieceId: string) => {
       if (disabled || isCompleted) return;
 
       e.preventDefault();
@@ -99,12 +74,12 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
         y: e.clientY - rect.top,
       };
 
-      setDraggedItem(itemId);
-      setDragItems(prev => prev.map(item => 
-        item.id === itemId ? { ...item, isDragging: true } : item
+      setDraggedPiece(pieceId);
+      setPuzzlePieces(prev => prev.map(piece => 
+        piece.id === pieceId ? { ...piece, isDragging: true } : piece
       ));
 
-      onInteraction?.('drag_start', { itemId, position: { x: e.clientX, y: e.clientY } });
+      onInteraction?.('piece_drag_start', { pieceId, position: { x: e.clientX, y: e.clientY } });
     },
     [disabled, isCompleted, onInteraction]
   );
@@ -114,7 +89,7 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
    */
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
-      if (!draggedItem || disabled || isCompleted) return;
+      if (!draggedPiece || disabled || isCompleted) return;
 
       const containerRect = containerRef.current?.getBoundingClientRect();
       if (!containerRect) return;
@@ -122,21 +97,21 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
       const newX = e.clientX - containerRect.left - dragOffsetRef.current.x;
       const newY = e.clientY - containerRect.top - dragOffsetRef.current.y;
 
-      setDragItems(prev => prev.map(item => 
-        item.id === draggedItem 
-          ? { ...item, position: { x: newX, y: newY } }
-          : item
+      setPuzzlePieces(prev => prev.map(piece => 
+        piece.id === draggedPiece 
+          ? { ...piece, position: { x: newX, y: newY } }
+          : piece
       ));
     },
-    [draggedItem, disabled, isCompleted]
+    [draggedPiece, disabled, isCompleted]
   );
 
   /**
-   * Handle mouse up to drop item
+   * Handle mouse up to drop piece
    */
   const handleMouseUp = useCallback(
     (e: MouseEvent) => {
-      if (!draggedItem || disabled || isCompleted) return;
+      if (!draggedPiece || disabled || isCompleted) return;
 
       const containerRect = containerRef.current?.getBoundingClientRect();
       if (!containerRect) return;
@@ -144,70 +119,70 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
       const dropX = e.clientX - containerRect.left;
       const dropY = e.clientY - containerRect.top;
 
-      // Find drop zone under cursor
-      const targetZone = dropZones.find(zone => 
-        dropX >= zone.position.x &&
-        dropX <= zone.position.x + zone.size.width &&
-        dropY >= zone.position.y &&
-        dropY <= zone.position.y + zone.size.height &&
-        !zone.hasItem
+      // Find puzzle slot under cursor
+      const targetSlot = puzzleSlots.find(slot => 
+        dropX >= slot.position.x &&
+        dropX <= slot.position.x + slot.size.width &&
+        dropY >= slot.position.y &&
+        dropY <= slot.position.y + slot.size.height &&
+        !slot.hasItem
       );
 
       setAttempts(prev => prev + 1);
 
-      if (targetZone) {
-        // Check if item matches expected item for this zone
-        const isCorrect = targetZone.expectedItemId === draggedItem;
+      if (targetSlot) {
+        // Check if piece matches expected piece for this slot
+        const isCorrect = targetSlot.expectedPieceId === draggedPiece;
         
         if (isCorrect) {
-          // Place item in zone
-          setDragItems(prev => prev.map(item => 
-            item.id === draggedItem 
+          // Place piece in slot
+          setPuzzlePieces(prev => prev.map(piece => 
+            piece.id === draggedPiece 
               ? { 
-                  ...item, 
+                  ...piece, 
                   position: {
-                    x: targetZone.position.x + 10,
-                    y: targetZone.position.y + 10,
+                    x: targetSlot.position.x + 10,
+                    y: targetSlot.position.y + 10,
                   },
                   isDragging: false,
                   isPlaced: true,
                 }
-              : item
+              : piece
           ));
 
-          setDropZones(prev => prev.map(zone => 
-            zone.id === targetZone.id ? { ...zone, hasItem: true } : zone
+          setPuzzleSlots(prev => prev.map(slot => 
+            slot.id === targetSlot.id ? { ...slot, hasItem: true } : slot
           ));
 
           onInteraction?.('drop_success', { 
-            itemId: draggedItem, 
-            zoneId: targetZone.id,
+            pieceId: draggedPiece, 
+            slotId: targetSlot.id,
             attempts,
           });
         } else {
-          // Wrong item, return to original position
+          // Wrong piece, return to original position
           onInteraction?.('drop_failure', { 
-            itemId: draggedItem, 
-            zoneId: targetZone.id,
+            pieceId: draggedPiece, 
+            slotId: targetSlot.id,
             attempts,
           });
         }
       }
 
       // Reset dragging state
-      setDragItems(prev => prev.map(item => 
-        item.id === draggedItem ? { ...item, isDragging: false } : item
+      setPuzzlePieces(prev => prev.map(piece => 
+        piece.id === draggedPiece ? { ...piece, isDragging: false } : piece
       ));
-      setDraggedItem(null);
+      setDraggedPiece(null);
     },
-    [draggedItem, dropZones, disabled, isCompleted, attempts, onInteraction]
+    [draggedPiece, puzzleSlots, disabled, isCompleted, attempts, onInteraction]
   );
 
   /**
    * Set up mouse event listeners
    */
   useEffect(() => {
-    if (draggedItem) {
+    if (draggedPiece) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       
@@ -216,15 +191,15 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [draggedItem, handleMouseMove, handleMouseUp]);
+  }, [draggedPiece, handleMouseMove, handleMouseUp]);
 
   /**
    * Check if puzzle is completed
    */
   useEffect(() => {
-    const allPlaced = dragItems.every(item => item.isPlaced);
+    const allPlaced = puzzlePieces.every(piece => piece.isPlaced);
     
-    if (allPlaced && dragItems.length > 0 && !isCompleted) {
+    if (allPlaced && puzzlePieces.length > 0 && !isCompleted) {
       setIsCompleted(true);
       const timeSpent = Date.now() - startTime;
       
@@ -237,46 +212,79 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
       onInteraction?.('puzzle_completed', {
         timeSpent,
         attempts,
-        totalItems: dragItems.length,
+        totalPieces: puzzlePieces.length,
       });
     }
-  }, [dragItems, isCompleted, startTime, attempts, onComplete, onInteraction]);
+  }, [puzzlePieces, isCompleted, startTime, attempts, onComplete, onInteraction]);
 
   /**
-   * Get item style based on state
+   * Get puzzle piece style based on state
    */
-  const getItemStyle = (item: DragItem) => {
+  const getPieceStyle = (piece: PuzzlePiece) => {
     const baseStyle = {
       position: 'absolute' as const,
-      left: `${item.position.x}px`,
-      top: `${item.position.y}px`,
-      width: '80px',
-      height: '50px',
+      left: `${piece.position.x}px`,
+      top: `${piece.position.y}px`,
+      width: '60px',
+      height: '60px',
       cursor: disabled || isCompleted ? 'default' : 'grab',
-      zIndex: item.isDragging ? 1000 : 1,
-      transform: item.isDragging ? 'scale(1.05)' : 'scale(1)',
-      transition: item.isDragging ? 'none' : 'transform 0.2s ease',
+      zIndex: piece.isDragging ? 1000 : 1,
+      transform: `scale(${piece.isDragging ? 1.1 : 1}) rotate(${piece.rotation}deg)`,
+      transition: piece.isDragging ? 'none' : 'transform 0.2s ease',
     };
 
     return baseStyle;
   };
 
   /**
-   * Get drop zone style
+   * Get puzzle slot style
    */
-  const getDropZoneStyle = (zone: DropZone) => ({
+  const getSlotStyle = (slot: PuzzleSlot) => ({
     position: 'absolute' as const,
-    left: `${zone.position.x}px`,
-    top: `${zone.position.y}px`,
-    width: `${zone.size.width}px`,
-    height: `${zone.size.height}px`,
+    left: `${slot.position.x}px`,
+    top: `${slot.position.y}px`,
+    width: `${slot.size.width}px`,
+    height: `${slot.size.height}px`,
   });
+
+  /**
+   * Render shape based on type
+   */
+  const renderShape = (shape: string, color: string, size: number = 60) => {
+    const shapeStyle = {
+      width: `${size}px`,
+      height: `${size}px`,
+      backgroundColor: color,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    };
+
+    switch (shape) {
+      case 'circle':
+        return <div style={{ ...shapeStyle, borderRadius: '50%' }} />;
+      case 'square':
+        return <div style={{ ...shapeStyle, borderRadius: '4px' }} />;
+      case 'triangle':
+        return (
+          <div style={{ 
+            width: 0, 
+            height: 0, 
+            borderLeft: `${size/2}px solid transparent`,
+            borderRight: `${size/2}px solid transparent`,
+            borderBottom: `${size}px solid ${color}`,
+          }} />
+        );
+      default:
+        return <div style={{ ...shapeStyle, borderRadius: '4px' }} />;
+    }
+  };
 
   return (
     <div className="nexcaptcha-drag-drop-puzzle">
       <div className="nexcaptcha-puzzle-instructions">
         <p className="text-sm text-gray-600 mb-4">
-          {'Drag each item to its correct position'}
+          {'Drag the puzzle pieces to their matching slots'}
         </p>
       </div>
       
@@ -285,55 +293,44 @@ export const DragDropPuzzle: React.FC<DragDropPuzzleProps> = ({
         className="nexcaptcha-puzzle-container relative w-full h-80 bg-gray-50 border-2 border-gray-200 rounded-lg overflow-hidden"
         style={{ userSelect: 'none' }}
       >
-        {/* Drop Zones */}
-        {dropZones.map(zone => (
+        {/* Puzzle Slots */}
+        {puzzleSlots.map(slot => (
           <div
-            key={zone.id}
-            className={`nexcaptcha-drop-zone border-2 border-dashed rounded-md flex items-center justify-center text-xs text-gray-400 ${
-              zone.hasItem 
+            key={slot.id}
+            className={`nexcaptcha-puzzle-slot border-2 border-dashed rounded-md flex items-center justify-center text-xs text-gray-400 ${
+              slot.hasItem 
                 ? 'border-green-400 bg-green-50' 
                 : 'border-gray-300 bg-white'
             }`}
-            style={getDropZoneStyle(zone)}
+            style={getSlotStyle(slot)}
           >
-            {zone.hasItem ? '✓' : 'Drop here'}
+            <div className="nexcaptcha-puzzle-slot-outline">
+              {renderShape(slot.shape, '#ddd', 50)}
+            </div>
           </div>
         ))}
         
-        {/* Drag Items */}
-        {dragItems.map(item => (
+        {/* Puzzle Pieces */}
+        {puzzlePieces.map(piece => (
           <div
-            key={item.id}
-            className={`nexcaptcha-drag-item bg-white border-2 rounded-md shadow-sm flex items-center justify-center text-sm font-medium select-none ${
-              item.isDragging 
+            key={piece.id}
+            className={`nexcaptcha-puzzle-piece bg-white border-2 rounded-md shadow-sm flex items-center justify-center text-sm font-medium select-none ${
+              piece.isDragging 
                 ? 'border-blue-400 shadow-lg' 
-                : item.isPlaced
+                : piece.isPlaced
                 ? 'border-green-400 bg-green-50'
                 : 'border-gray-300 hover:border-gray-400'
             } ${
               disabled || isCompleted ? 'opacity-50' : ''
             }`}
-            style={getItemStyle(item)}
-            onMouseDown={(e) => handleMouseDown(e, item.id)}
+            style={getPieceStyle(piece)}
+            onMouseDown={(e) => handleMouseDown(e, piece.id)}
           >
-            {item.content}
+            {renderShape(piece.shape, piece.color)}
           </div>
         ))}
         
-        {/* Completion Overlay */}
-        {isCompleted && (
-          <div className="absolute inset-0 bg-green-100 bg-opacity-75 flex items-center justify-center">
-            <div className="bg-white p-4 rounded-lg shadow-lg text-center">
-              <div className="text-green-600 text-2xl mb-2">✓</div>
-              <div className="text-sm font-medium text-gray-800">
-                Puzzle completed!
-              </div>
-              <div className="text-xs text-gray-600 mt-1">
-                {attempts} attempts in {Math.round((Date.now() - startTime) / 1000)}s
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );

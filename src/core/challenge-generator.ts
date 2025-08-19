@@ -8,6 +8,7 @@ import {
   DragDropTarget,
   EmojiItem,
   PuzzlePiece,
+  SliderPuzzlePiece,
   AudioFile,
 } from '../types';
 
@@ -208,8 +209,8 @@ export class ChallengeGenerator {
   /**
    * Generate puzzle pieces for slider puzzle
    */
-  public static generatePuzzlePieces(gridSize: { width: number; height: number }): PuzzlePiece[] {
-    const pieces: PuzzlePiece[] = [];
+  public static generatePuzzlePieces(gridSize: { width: number; height: number }): SliderPuzzlePiece[] {
+    const pieces: SliderPuzzlePiece[] = [];
     const totalPieces = gridSize.width * gridSize.height;
     
     // Generate pieces in correct positions

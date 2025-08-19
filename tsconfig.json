@@ -18,7 +18,7 @@
     "declarationMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "jsx": "react-jsx",
+    "jsx": "react",
     "incremental": true,
     "baseUrl": ".",
     "paths": {

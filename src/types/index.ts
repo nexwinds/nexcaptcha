@@ -40,9 +40,10 @@ export interface I18nConfig {
 
 // Challenge types
 export type ChallengeType = 
+  | 'center-click'
   | 'drag-drop'
   | 'emoji-selection'
-  | 'slider-puzzle'
+  | 'slider'
   | 'number-sorting'
   | 'audio-matching'
   | 'proof-of-work'
@@ -166,12 +167,12 @@ export interface EmojiItem {
 
 export interface SliderPuzzle {
   imageUrl: string;
-  pieces: PuzzlePiece[];
+  pieces: SliderPuzzlePiece[];
   gridSize: { width: number; height: number };
   tolerance: number;
 }
 
-export interface PuzzlePiece {
+export interface SliderPuzzlePiece {
   id: string;
   currentPosition: { x: number; y: number };
   correctPosition: { x: number; y: number };
@@ -199,9 +200,27 @@ export interface AudioFile {
 
 // Challenge data types
 export interface DragDropChallengeData {
-  items: DragDropItem[];
-  targets: DragDropTarget[];
-  correctMappings: Record<string, string>;
+  puzzlePieces: PuzzlePiece[];
+  puzzleSlots: PuzzleSlot[];
+}
+
+export interface PuzzlePiece {
+  id: string;
+  shape: string;
+  color: string;
+  position: { x: number; y: number };
+  rotation: number;
+  isDragging: boolean;
+  isPlaced: boolean;
+}
+
+export interface PuzzleSlot {
+  id: string;
+  shape: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  expectedPieceId: string;
+  hasItem: boolean;
 }
 
 export interface EmojiSelectionChallengeData {
@@ -213,7 +232,7 @@ export interface EmojiSelectionChallengeData {
 
 export interface SliderPuzzleChallengeData {
   imageUrl: string;
-  pieces: PuzzlePiece[];
+  pieces: SliderPuzzlePiece[];
   gridSize: { width: number; height: number };
   tolerance: number;
 }
@@ -228,6 +247,8 @@ export interface AudioMatchingChallengeData {
   audioFiles: AudioFile[];
   categories: string[];
   correctMappings: Record<string, string>;
+  animalSounds?: AudioFile[];
+  animalOptions?: Array<{ id: string; name: string; emoji: string }>;
 }
 
 // Result types

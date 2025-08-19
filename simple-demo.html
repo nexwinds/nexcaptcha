@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexCaptcha Demo</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./dist/nexcaptcha.umd.js"></script>
+    <link rel="stylesheet" href="./dist/styles.css">
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+        const { createRoot } = ReactDOM;
+        const { SimpleCaptcha } = NexCaptcha;
+        
+        const SimpleCaptchaDemo = () => {
+            const [isVerified, setIsVerified] = useState(false);
+            
+            const handleVerification = (success) => {
+                setIsVerified(success);
+                if (success) {
+                    alert('CAPTCHA verification successful!');
+                } else {
+                    alert('CAPTCHA verification failed. Please try again.');
+                }
+            };
+            
+            return (
+                <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+                        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
+                            NexCaptcha Demo
+                        </h1>
+                        
+                        <div className="mb-6">
+                            <p className="text-gray-600 text-center mb-4">
+                                This demo shows the SimpleCaptcha component in action.
+                            </p>
+                            
+                            <SimpleCaptcha onVerify={handleVerification} />
+                        </div>
+                        
+                        {isVerified && (
+                            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                                ✅ Verification successful!
+                            </div>
+                        )}
+                        
+                        <div className="mt-6 text-center">
+                            <p className="text-sm text-gray-500">
+                                Complete the CAPTCHA challenge above to verify you're human.
+                            </p>
+                            <p className="text-xs text-gray-400 mt-2">
+                                This demo uses the actual NexCaptcha component with interactive puzzles.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Render the demo
+        const root = createRoot(document.getElementById('root'));
+        root.render(<SimpleCaptchaDemo />);
+    </script>
+</body>
+</html>

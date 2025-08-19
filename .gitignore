@@ -9,6 +9,7 @@
 # production
 /build
 /dist
+.rollup.cache
 
 # debug
 npm-debug.log*

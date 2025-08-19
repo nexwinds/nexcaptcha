@@ -145,7 +145,7 @@ export class ValidationEngine {
     const types: ChallengeType[] = [];
 
     if (this.config.enableInteractivePuzzles) {
-      types.push('drag-drop', 'emoji-selection', 'slider-puzzle', 'number-sorting', 'audio-matching');
+      types.push('drag-drop', 'emoji-selection', 'slider', 'number-sorting', 'audio-matching');
     }
 
     if (this.config.enableProofOfWork) {
@@ -168,7 +168,7 @@ export class ValidationEngine {
         return this.generateDragDropData();
       case 'emoji-selection':
         return this.generateEmojiSelectionData();
-      case 'slider-puzzle':
+      case 'slider':
         return this.generateSliderPuzzleData();
       case 'number-sorting':
         return this.generateNumberSortingData();
@@ -465,9 +465,10 @@ export class ValidationEngine {
 
   private calculateTimeLimit(type: ChallengeType): number {
     const baseTimes: Record<ChallengeType, number> = {
+      'center-click': 15000,
       'drag-drop': 60000,
       'emoji-selection': 30000,
-      'slider-puzzle': 120000,
+      'slider': 120000,
       'number-sorting': 45000,
       'audio-matching': 90000,
       'proof-of-work': 30000,

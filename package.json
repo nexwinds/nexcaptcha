@@ -1,7 +1,7 @@
 {
   "name": "nexcaptcha",
-  "version": "1.0.0",
-  "description": "A multi-layer CAPTCHA solution for Next.js with Tailwind CSS",
+  "version": "1.0.1",
+  "description": "Streamlined CAPTCHA solution with minimal configuration - Google reCAPTCHA alternative",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -19,35 +19,42 @@
   },
   "keywords": [
     "captcha",
-    "nextjs",
     "react",
     "security",
-    "tailwindcss",
     "typescript",
-    "behavioral-analysis",
-    "proof-of-work"
+    "simple",
+    "streamlined",
+    "recaptcha-alternative",
+    "minimal-config"
   ],
   "author": "Your Name",
   "license": "MIT",
   "peerDependencies": {
     "react": ">=16.8.0",
-    "react-dom": ">=16.8.0",
-    "next": ">=12.0.0"
-  },
-  "dependencies": {
-    "clsx": "^2.0.0",
-    "framer-motion": "^10.16.0"
+    "react-dom": ">=16.8.0"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "autoprefixer": "^10.4.21",
     "eslint": "^8.0.0",
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "postcss": "^8.5.6",
+    "rollup": "^4.46.3",
+    "rollup-plugin-dts": "^6.2.3",
+    "rollup-plugin-filesize": "^10.0.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
     "tailwindcss": "^3.3.0",
+    "tslib": "^2.8.1",
     "typescript": "^5.0.0"
   },
   "repository": {

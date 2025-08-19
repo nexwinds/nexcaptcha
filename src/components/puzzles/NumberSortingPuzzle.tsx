@@ -101,53 +101,14 @@ export const NumberSortingPuzzle: React.FC<NumberSortingPuzzleProps> = ({
   }, [challenge.numbers, challenge.sortOrder, isCompleted, startTime, swaps, onComplete, onInteraction]);
 
   /**
-   * Handle number selection
+   * Handle number click (disabled for drag-only mode)
    */
   const handleNumberClick = useCallback(
     (numberId: string) => {
-      if (disabled || isCompleted) return;
-
-      setSelectedNumbers(prev => {
-        const newSelected = [...prev];
-        const index = newSelected.indexOf(numberId);
-        
-        if (index > -1) {
-          // Deselect
-          newSelected.splice(index, 1);
-        } else {
-          // Select (max 2 numbers for swapping)
-          if (newSelected.length < 2) {
-            newSelected.push(numberId);
-          } else {
-            // Replace first selection
-            newSelected[0] = newSelected[1];
-            newSelected[1] = numberId;
-          }
-        }
-        
-        // Auto-swap when 2 numbers are selected
-        if (newSelected.length === 2) {
-          setTimeout(() => {
-            handleSwap(newSelected[0], newSelected[1]);
-            setSelectedNumbers([]);
-          }, 100);
-        }
-        
-        return newSelected;
-      });
-
-      // Update visual selection
-      setNumbers(prev => prev.map(item => ({
-        ...item,
-        isSelected: selectedNumbers.includes(item.id) || item.id === numberId,
-      })));
-
-      onInteraction?.('number_selected', {
-        numberId,
-        selectedCount: selectedNumbers.length + 1,
-      });
+      // Disabled - only drag and drop allowed
+      return;
     },
-    [selectedNumbers, disabled, isCompleted, onInteraction]
+    []
   );
 
   /**
@@ -262,28 +223,26 @@ export const NumberSortingPuzzle: React.FC<NumberSortingPuzzleProps> = ({
    * Get number item class names
    */
   const getNumberClassName = (item: NumberItem, index: number) => {
-    let className = 'nexcaptcha-number-item w-16 h-16 flex items-center justify-center text-lg font-bold border-2 rounded-lg transition-all duration-200 cursor-pointer select-none';
+    let className = 'nexcaptcha-number-item w-20 h-20 flex items-center justify-center text-xl font-bold border-2 rounded-lg transition-all duration-200 select-none relative';
     
     if (disabled || isCompleted) {
       className += ' cursor-not-allowed opacity-75';
     } else {
-      className += ' hover:scale-105 hover:shadow-md';
+      className += ' cursor-grab hover:scale-105 hover:shadow-lg';
     }
     
-    if (item.isSelected) {
-      className += ' border-blue-500 bg-blue-100 shadow-blue-200';
-    } else if (item.isCorrectPosition) {
+    if (item.isCorrectPosition) {
       className += ' border-green-500 bg-green-100 text-green-800';
     } else {
-      className += ' border-gray-300 bg-white hover:border-gray-400';
+      className += ' border-gray-300 bg-white hover:border-blue-400';
     }
     
     if (draggedItem === item.id) {
-      className += ' opacity-50 scale-95';
+      className += ' opacity-50 scale-95 cursor-grabbing';
     }
     
     if (dragOverIndex === index && draggedItem !== item.id) {
-      className += ' border-blue-400 bg-blue-50';
+      className += ' border-blue-500 bg-blue-50 scale-105';
     }
     
     return className;
@@ -333,10 +292,10 @@ export const NumberSortingPuzzle: React.FC<NumberSortingPuzzleProps> = ({
     <div className="nexcaptcha-number-sorting-puzzle">
       <div className="nexcaptcha-puzzle-instructions mb-4">
         <h3 className="text-lg font-medium text-gray-800 mb-2">
-          {getSortingInstruction()}
+          Sort the numbers in ascending order
         </h3>
         <p className="text-sm text-gray-600">
-          Click two numbers to swap them, or drag and drop to rearrange
+          Drag and drop the numbers to arrange them from smallest to largest
         </p>
       </div>
       
@@ -395,31 +354,12 @@ export const NumberSortingPuzzle: React.FC<NumberSortingPuzzleProps> = ({
           ))}
         </div>
         
-        {selectedNumbers.length > 0 && (
-          <div className="text-center text-sm text-gray-600 mb-4">
-            Selected: {selectedNumbers.length}/2 numbers
-            {selectedNumbers.length === 1 && ' (select one more to swap)'}
-          </div>
-        )}
+        <div className="text-center text-sm text-gray-500 mb-4">
+          Drag the numbers to sort them in ascending order
+        </div>
       </div>
       
-      {/* Completion Overlay */}
-      {isCompleted && (
-        <div className="nexcaptcha-completion-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm mx-4">
-            <div className="text-green-600 text-4xl mb-3">🎯</div>
-            <div className="text-xl font-bold text-gray-800 mb-2">
-              Perfect Sort!
-            </div>
-            <div className="text-gray-600 mb-4">
-              Completed in {swaps} swap{swaps !== 1 ? 's' : ''}
-            </div>
-            <div className="text-sm text-gray-500">
-              Time: {Math.round((Date.now() - startTime) / 1000)}s
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

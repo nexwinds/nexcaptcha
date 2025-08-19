@@ -1,19 +1,20 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
-import { terser } from 'rollup-plugin-terser';
+import terser from '@rollup/plugin-terser';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import postcss from 'rollup-plugin-postcss';
 import { dts } from 'rollup-plugin-dts';
 import filesize from 'rollup-plugin-filesize';
 
-const packageJson = require('./package.json');
+import { readFileSync } from 'fs';
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
 
 const isProduction = process.env.NODE_ENV === 'production';
 
 const baseConfig = {
   input: 'src/index.ts',
-  external: ['react', 'react-dom', 'next'],
+  external: ['react', 'react-dom', 'react/jsx-runtime', 'next'],
   plugins: [
     peerDepsExternal(),
     resolve({
@@ -45,7 +46,7 @@ const configs = [
   {
     ...baseConfig,
     output: {
-      file: packageJson.module,
+      file: 'dist/index.esm.js',
       format: 'esm',
       sourcemap: true,
     },
@@ -95,6 +96,7 @@ const configs = [
       globals: {
         react: 'React',
         'react-dom': 'ReactDOM',
+        'react/jsx-runtime': 'React',
         next: 'Next',
       },
     },

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { SliderPuzzleChallengeData, CaptchaTheme } from '../../types/index';
+import { SliderPuzzleChallengeData, CaptchaTheme, SliderPuzzlePiece } from '../../types/index';
 
 interface SliderPuzzleProps {
   /** Challenge data containing puzzle configuration */
@@ -19,7 +19,7 @@ interface SliderPuzzleProps {
   disabled?: boolean;
 }
 
-interface PuzzlePiece {
+interface LocalPuzzlePiece {
   id: number;
   position: number;
   correctPosition: number;
@@ -38,7 +38,7 @@ export const SliderPuzzle: React.FC<SliderPuzzleProps> = ({
   onInteraction,
   disabled = false,
 }) => {
-  const [pieces, setPieces] = useState<PuzzlePiece[]>([]);
+  const [pieces, setPieces] = useState<LocalPuzzlePiece[]>([]);
   const [emptyPosition, setEmptyPosition] = useState<number>(0);
   const [moves, setMoves] = useState(0);
   const [startTime] = useState(Date.now());
@@ -52,12 +52,12 @@ export const SliderPuzzle: React.FC<SliderPuzzleProps> = ({
    * Initialize puzzle pieces
    */
   useEffect(() => {
-    const initialPieces: PuzzlePiece[] = [];
+    const initialPieces: LocalPuzzlePiece[] = [];
     
     // Create pieces (last piece is empty)
     for (let i = 0; i < totalPieces; i++) {
       const isEmpty = i === totalPieces - 1;
-      const piece: PuzzlePiece = {
+      const piece: LocalPuzzlePiece = {
         id: i,
         position: i,
         correctPosition: i,
@@ -91,7 +91,7 @@ export const SliderPuzzle: React.FC<SliderPuzzleProps> = ({
   /**
    * Shuffle puzzle pieces
    */
-  const shufflePuzzle = (initialPieces: PuzzlePiece[], size: number): PuzzlePiece[] => {
+  const shufflePuzzle = (initialPieces: LocalPuzzlePiece[], size: number): LocalPuzzlePiece[] => {
     const shuffled = [...initialPieces];
     const emptyIndex = shuffled.findIndex(p => p.isEmpty);
     
@@ -216,7 +216,7 @@ export const SliderPuzzle: React.FC<SliderPuzzleProps> = ({
   /**
    * Get piece style
    */
-  const getPieceStyle = (piece: PuzzlePiece) => {
+  const getPieceStyle = (piece: LocalPuzzlePiece) => {
     const row = Math.floor(piece.position / gridSizeValue);
     const col = piece.position % gridSizeValue;
     const size = 100 / gridSizeValue;
@@ -237,7 +237,7 @@ export const SliderPuzzle: React.FC<SliderPuzzleProps> = ({
   /**
    * Get piece class names
    */
-  const getPieceClassName = (piece: PuzzlePiece) => {
+  const getPieceClassName = (piece: LocalPuzzlePiece) => {
     let className = 'nexcaptcha-puzzle-piece border border-gray-300';
     
     if (piece.isEmpty) {
@@ -341,20 +341,7 @@ export const SliderPuzzle: React.FC<SliderPuzzleProps> = ({
           </div>
         ))}
         
-        {/* Completion Overlay */}
-        {isCompleted && (
-          <div className="absolute inset-0 bg-green-100 bg-opacity-90 flex items-center justify-center">
-            <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-              <div className="text-green-600 text-3xl mb-3">🧩</div>
-              <div className="text-lg font-medium text-gray-800 mb-2">
-                Puzzle completed!
-              </div>
-              <div className="text-sm text-gray-600">
-                {moves} moves in {Math.round((Date.now() - startTime) / 1000)}s
-              </div>
-            </div>
-          </div>
-        )}
+
       </div>
       
       {/* Hint */}

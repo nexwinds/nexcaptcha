@@ -158,34 +158,47 @@ export const EmojiSelectionPuzzle: React.FC<EmojiSelectionPuzzleProps> = ({
   /**
    * Get emoji button class names
    */
-  const getEmojiButtonClass = (item: EmojiItem) => {
-    let baseClass = 'nexcaptcha-emoji-button w-16 h-16 text-2xl border-2 rounded-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400';
-    
-    if (disabled || isValidating) {
-      baseClass += ' cursor-not-allowed opacity-50';
-    } else {
-      baseClass += ' cursor-pointer hover:shadow-md';
-    }
+  const getEmojiButtonStyle = (item: EmojiItem): React.CSSProperties => {
+    let style: React.CSSProperties = {
+      width: '64px',
+      height: '64px',
+      fontSize: '24px',
+      border: '2px solid',
+      borderRadius: '8px',
+      backgroundColor: 'white',
+      cursor: disabled || isValidating ? 'not-allowed' : 'pointer',
+      opacity: disabled || isValidating ? 0.5 : 1,
+      transition: 'all 0.2s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative'
+    };
     
     if (item.isSelected) {
       if (showFeedback) {
         if (item.isCorrect) {
-          baseClass += ' border-green-500 bg-green-100 shadow-green-200';
+          style.borderColor = '#10b981';
+          style.backgroundColor = '#d1fae5';
         } else {
-          baseClass += ' border-red-500 bg-red-100 shadow-red-200';
+          style.borderColor = '#ef4444';
+          style.backgroundColor = '#fee2e2';
         }
       } else {
-        baseClass += ' border-blue-500 bg-blue-100 shadow-blue-200';
+        style.borderColor = '#3b82f6';
+        style.backgroundColor = '#dbeafe';
       }
     } else {
       if (showFeedback && item.isCorrect) {
-        baseClass += ' border-green-300 bg-green-50';
+        style.borderColor = '#10b981';
+        style.backgroundColor = '#f0fdf4';
       } else {
-        baseClass += ' border-gray-300 bg-white hover:border-gray-400';
+        style.borderColor = '#d1d5db';
+        style.backgroundColor = 'white';
       }
     }
     
-    return baseClass;
+    return style;
   };
 
   /**
@@ -215,11 +228,17 @@ export const EmojiSelectionPuzzle: React.FC<EmojiSelectionPuzzleProps> = ({
         </p>
       </div>
       
-      <div className="nexcaptcha-emoji-grid grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 mb-6">
+      <div className="nexcaptcha-emoji-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '12px',
+        marginBottom: '24px',
+        maxWidth: '400px'
+      }}>
         {emojiItems.map(item => (
           <button
             key={item.id}
-            className={getEmojiButtonClass(item)}
+            style={getEmojiButtonStyle(item)}
             onClick={() => handleEmojiClick(item.id)}
             disabled={disabled || isValidating}
             aria-label={`${item.emoji} emoji${item.isSelected ? ', selected' : ''}`}
@@ -312,20 +331,7 @@ export const EmojiSelectionPuzzle: React.FC<EmojiSelectionPuzzleProps> = ({
         </div>
       )}
       
-      {/* Completion Overlay */}
-      {isCompleted && (
-        <div className="absolute inset-0 bg-green-100 bg-opacity-75 flex items-center justify-center rounded-lg">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-            <div className="text-green-600 text-3xl mb-3">🎉</div>
-            <div className="text-lg font-medium text-gray-800 mb-2">
-              Puzzle completed!
-            </div>
-            <div className="text-sm text-gray-600">
-              {attempts} attempt{attempts !== 1 ? 's' : ''} in {Math.round((Date.now() - startTime) / 1000)}s
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

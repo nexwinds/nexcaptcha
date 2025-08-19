@@ -1,6 +1,6 @@
 /**
  * Audio Matching Puzzle Component for NexCaptcha
- * Interactive puzzle where users match audio clips to visual representations
+ * Interactive puzzle where users listen to animal sounds and choose the correct animal
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -19,19 +19,18 @@ interface AudioMatchingPuzzleProps {
   disabled?: boolean;
 }
 
-interface AudioClip {
+interface AnimalSound {
   id: string;
   audioUrl: string;
-  correctMatchId: string;
+  animalName: string;
   isPlaying: boolean;
   hasBeenPlayed: boolean;
 }
 
-interface MatchOption {
+interface AnimalOption {
   id: string;
-  label: string;
-  imageUrl?: string;
-  description?: string;
+  name: string;
+  emoji: string;
   isSelected: boolean;
   isCorrect: boolean;
 }
@@ -46,10 +45,11 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
   onInteraction,
   disabled = false,
 }) => {
-  const [audioClips, setAudioClips] = useState<AudioClip[]>([]);
-  const [matchOptions, setMatchOptions] = useState<MatchOption[]>([]);
+  const [animalSounds, setAnimalSounds] = useState<AnimalSound[]>([]);
+  const [animalOptions, setAnimalOptions] = useState<AnimalOption[]>([]);
   const [currentAudioId, setCurrentAudioId] = useState<string | null>(null);
-  const [selectedMatches, setSelectedMatches] = useState<Map<string, string>>(new Map());
+  const [selectedAnimal, setSelectedAnimal] = useState<string | null>(null);
+  const [currentSoundIndex, setCurrentSoundIndex] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [startTime] = useState(Date.now());
   const [isCompleted, setIsCompleted] = useState(false);
@@ -57,54 +57,75 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
   const [audioLoadingStates, setAudioLoadingStates] = useState<Map<string, boolean>>(new Map());
   const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const [volume, setVolume] = useState(0.7);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [selectedMatches, setSelectedMatches] = useState<Map<string, string>>(new Map());
+  const [matchOptions, setMatchOptions] = useState<AnimalOption[]>([]);
 
   /**
-   * Initialize audio clips and match options
+   * Initialize animal sounds and options
    */
   useEffect(() => {
-    const clips: AudioClip[] = challenge.audioFiles.map(clip => ({
-      id: clip.id,
-      audioUrl: clip.url,
-      correctMatchId: challenge.correctMappings[clip.id] || '',
-      isPlaying: false,
-      hasBeenPlayed: false,
-    }));
+    // Define animal sounds with their corresponding audio files
+    const sounds: AnimalSound[] = [
+      {
+        id: 'sound-1',
+        audioUrl: '/assets/audio/birds/red-parrot.mp3',
+        animalName: 'Bird',
+        isPlaying: false,
+        hasBeenPlayed: false,
+      },
+      {
+        id: 'sound-2', 
+        audioUrl: '/assets/audio/farm-animals/cow.mp3',
+        animalName: 'Cow',
+        isPlaying: false,
+        hasBeenPlayed: false,
+      },
+      {
+        id: 'sound-3',
+        audioUrl: '/assets/audio/jungle-animals/lion.mp3', 
+        animalName: 'Lion',
+        isPlaying: false,
+        hasBeenPlayed: false,
+      }
+    ];
 
-    const options: MatchOption[] = challenge.categories.map((category, index) => ({
-      id: `category-${index}`,
-      label: category,
-      imageUrl: undefined,
-      description: undefined,
-      isSelected: false,
-      isCorrect: false,
-    }));
+    // Define animal options with emojis
+    const options: AnimalOption[] = [
+      { id: 'bird', name: 'Bird', emoji: '🦜', isSelected: false, isCorrect: false },
+      { id: 'cow', name: 'Cow', emoji: '🐄', isSelected: false, isCorrect: false },
+      { id: 'lion', name: 'Lion', emoji: '🦁', isSelected: false, isCorrect: false },
+      { id: 'dog', name: 'Dog', emoji: '🐕', isSelected: false, isCorrect: false },
+      { id: 'cat', name: 'Cat', emoji: '🐱', isSelected: false, isCorrect: false },
+      { id: 'duck', name: 'Duck', emoji: '🦆', isSelected: false, isCorrect: false },
+    ];
 
     // Shuffle options for better security
     const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
 
-    setAudioClips(clips);
-    setMatchOptions(shuffledOptions);
+    setAnimalSounds(sounds);
+    setAnimalOptions(shuffledOptions);
 
     // Preload audio files
-    clips.forEach(clip => {
-      const audio = new Audio(clip.audioUrl);
+    sounds.forEach(sound => {
+      const audio = new Audio(sound.audioUrl);
       audio.preload = 'auto';
       audio.volume = volume;
       
       audio.addEventListener('loadstart', () => {
-        setAudioLoadingStates(prev => new Map(prev.set(clip.id, true)));
+        setAudioLoadingStates(prev => new Map(prev.set(sound.id, true)));
       });
       
       audio.addEventListener('canplaythrough', () => {
-        setAudioLoadingStates(prev => new Map(prev.set(clip.id, false)));
+        setAudioLoadingStates(prev => new Map(prev.set(sound.id, false)));
       });
       
       audio.addEventListener('error', () => {
-        console.error(`Failed to load audio: ${clip.audioUrl}`);
-        setAudioLoadingStates(prev => new Map(prev.set(clip.id, false)));
+        console.error(`Failed to load audio: ${sound.audioUrl}`);
+        setAudioLoadingStates(prev => new Map(prev.set(sound.id, false)));
       });
       
-      audioRefs.current.set(clip.id, audio);
+      audioRefs.current.set(sound.id, audio);
     });
 
     return () => {
@@ -115,35 +136,35 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
       });
       audioRefs.current.clear();
     };
-  }, [challenge, volume]);
+  }, [volume]);
 
   /**
-   * Play audio clip
+   * Play animal sound
    */
-  const playAudio = useCallback(
-    async (clipId: string) => {
+  const playAnimalSound = useCallback(
+    async (soundId: string) => {
       if (disabled || isCompleted) return;
 
-      const audio = audioRefs.current.get(clipId);
+      const audio = audioRefs.current.get(soundId);
       if (!audio) return;
 
       try {
         // Stop any currently playing audio
         audioRefs.current.forEach((audioElement, id) => {
-          if (id !== clipId && !audioElement.paused) {
+          if (id !== soundId && !audioElement.paused) {
             audioElement.pause();
             audioElement.currentTime = 0;
           }
         });
 
         // Update playing states
-        setAudioClips(prev => prev.map(clip => ({
-          ...clip,
-          isPlaying: clip.id === clipId,
-          hasBeenPlayed: clip.id === clipId ? true : clip.hasBeenPlayed,
+        setAnimalSounds(prev => prev.map(sound => ({
+          ...sound,
+          isPlaying: sound.id === soundId,
+          hasBeenPlayed: sound.id === soundId ? true : sound.hasBeenPlayed,
         })));
 
-        setCurrentAudioId(clipId);
+        setCurrentAudioId(soundId);
 
         // Play audio
         audio.currentTime = 0;
@@ -151,8 +172,8 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
 
         // Handle audio end
         const handleEnded = () => {
-          setAudioClips(prev => prev.map(clip => 
-            clip.id === clipId ? { ...clip, isPlaying: false } : clip
+          setAnimalSounds(prev => prev.map(sound => 
+            sound.id === soundId ? { ...sound, isPlaying: false } : sound
           ));
           setCurrentAudioId(null);
           audio.removeEventListener('ended', handleEnded);
@@ -161,14 +182,14 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
         audio.addEventListener('ended', handleEnded);
 
         onInteraction?.('audio_played', {
-          clipId,
+          soundId,
           duration: audio.duration,
           currentTime: audio.currentTime,
         });
       } catch (error) {
         console.error('Error playing audio:', error);
-        setAudioClips(prev => prev.map(clip => 
-          clip.id === clipId ? { ...clip, isPlaying: false } : clip
+        setAnimalSounds(prev => prev.map(sound => 
+          sound.id === soundId ? { ...sound, isPlaying: false } : sound
         ));
         setCurrentAudioId(null);
       }
@@ -180,21 +201,92 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
    * Stop audio playback
    */
   const stopAudio = useCallback(
-    (clipId: string) => {
-      const audio = audioRefs.current.get(clipId);
+    (soundId: string) => {
+      const audio = audioRefs.current.get(soundId);
       if (audio && !audio.paused) {
         audio.pause();
         audio.currentTime = 0;
         
-        setAudioClips(prev => prev.map(clip => 
-          clip.id === clipId ? { ...clip, isPlaying: false } : clip
+        setAnimalSounds(prev => prev.map(sound => 
+          sound.id === soundId ? { ...sound, isPlaying: false } : sound
         ));
         setCurrentAudioId(null);
 
-        onInteraction?.('audio_stopped', { clipId });
+        onInteraction?.('audio_stopped', { soundId });
       }
     },
     [onInteraction]
+  );
+
+  /**
+   * Handle animal selection
+   */
+  const handleAnimalSelection = useCallback(
+    (animalId: string) => {
+      if (disabled || isCompleted) return;
+
+      const currentSound = animalSounds[currentSoundIndex];
+      if (!currentSound) return;
+
+      setSelectedAnimal(animalId);
+      setAttempts(prev => prev + 1);
+
+      // Check if selection is correct
+      const isCorrect = animalId.toLowerCase() === currentSound.animalName.toLowerCase();
+      
+      setAnimalOptions(prev => prev.map(option => ({
+        ...option,
+        isSelected: option.id === animalId,
+        isCorrect: option.id === animalId ? isCorrect : false,
+      })));
+
+      setShowFeedback(true);
+
+      onInteraction?.('animal_selected', {
+        animalId,
+        soundId: currentSound.id,
+        isCorrect,
+        attempts,
+      });
+
+      // Move to next sound or complete puzzle
+      setTimeout(() => {
+        if (isCorrect) {
+          setCorrectAnswers(prev => prev + 1);
+          
+          if (currentSoundIndex < animalSounds.length - 1) {
+            // Move to next sound
+            setCurrentSoundIndex(prev => prev + 1);
+            setSelectedAnimal(null);
+            setShowFeedback(false);
+            setAnimalOptions(prev => prev.map(option => ({
+              ...option,
+              isSelected: false,
+              isCorrect: false,
+            })));
+          } else {
+            // All sounds completed
+            setIsCompleted(true);
+            const timeSpent = Date.now() - startTime;
+            onComplete({
+              success: true,
+              timeSpent,
+              attempts: attempts + 1,
+            });
+          }
+        } else {
+          // Reset for retry
+          setSelectedAnimal(null);
+          setShowFeedback(false);
+          setAnimalOptions(prev => prev.map(option => ({
+            ...option,
+            isSelected: false,
+            isCorrect: false,
+          })));
+        }
+      }, 2000);
+    },
+    [disabled, isCompleted, animalSounds, currentSoundIndex, attempts, startTime, onComplete, onInteraction]
   );
 
   /**
@@ -244,19 +336,19 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
 
     // Check if all matches are correct
     let correctCount = 0;
-    const totalRequired = audioClips.length;
+    const totalRequired = animalSounds.length;
 
-    audioClips.forEach(clip => {
-      const selectedMatch = selectedMatches.get(clip.id);
-      if (selectedMatch === clip.correctMatchId) {
+    animalSounds.forEach(sound => {
+      const selectedMatch = selectedMatches.get(sound.id);
+      if (selectedMatch === sound.animalName.toLowerCase()) {
         correctCount++;
       }
     });
 
     // Update match options with correct/incorrect indicators
     setMatchOptions(prev => prev.map(option => {
-      const isCorrectForAnyAudio = audioClips.some(clip => 
-        clip.correctMatchId === option.id && selectedMatches.get(clip.id) === option.id
+      const isCorrectForAnyAudio = animalSounds.some(sound => 
+        sound.animalName.toLowerCase() === option.id && selectedMatches.get(sound.id) === option.id
       );
       return {
         ...option,
@@ -281,7 +373,7 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
           timeSpent,
           attempts,
           correctMatches: correctCount,
-          totalAudioClips: totalRequired,
+          totalAnimalSounds: totalRequired,
         });
       }, 1500);
     } else {
@@ -302,15 +394,15 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
         })));
       }, 3000);
     }
-  }, [audioClips, selectedMatches, disabled, isCompleted, startTime, attempts, onComplete, onInteraction]);
+  }, [animalSounds, selectedMatches, disabled, isCompleted, startTime, attempts, onComplete, onInteraction]);
 
   /**
    * Handle submit
    */
   const handleSubmit = useCallback(() => {
-    if (selectedMatches.size !== audioClips.length) return;
+    if (selectedMatches.size !== animalSounds.length) return;
     validateMatches();
-  }, [selectedMatches.size, audioClips.length, validateMatches]);
+  }, [selectedMatches.size, animalSounds.length, validateMatches]);
 
   /**
    * Update volume
@@ -325,7 +417,7 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
   /**
    * Get audio button class names
    */
-  const getAudioButtonClass = (clip: AudioClip) => {
+  const getAudioButtonClass = (clip: AnimalSound) => {
     let className = 'nexcaptcha-audio-button flex items-center gap-3 p-3 border-2 rounded-lg transition-all duration-200';
     
     if (disabled || isCompleted) {
@@ -348,7 +440,7 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
   /**
    * Get match option class names
    */
-  const getMatchOptionClass = (option: MatchOption) => {
+  const getMatchOptionClass = (option: AnimalOption) => {
     let className = 'nexcaptcha-match-option p-3 border-2 rounded-lg transition-all duration-200 cursor-pointer hover:shadow-md';
     
     if (disabled || isCompleted) {
@@ -376,204 +468,211 @@ export const AudioMatchingPuzzle: React.FC<AudioMatchingPuzzleProps> = ({
     return className;
   };
 
+  const currentSound = animalSounds[currentSoundIndex];
+  const progressText = `${currentSoundIndex + 1} of ${animalSounds.length}`;
+
   return (
-    <div className="nexcaptcha-audio-matching-puzzle">
-      <div className="nexcaptcha-puzzle-instructions mb-4">
-        <h3 className="text-lg font-medium text-gray-800 mb-2">
-          {'Listen to each audio clip and match it to the correct option'}
+    <div 
+      className="nexcaptcha-audio-matching-puzzle"
+      style={{
+        padding: '20px',
+        border: `1px solid ${theme?.borderColor || '#e2e8f0'}`,
+        borderRadius: theme?.borderRadius || '8px',
+        backgroundColor: theme?.backgroundColor || '#ffffff',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}
+    >
+      <div className="nexcaptcha-puzzle-instructions" style={{ marginBottom: '16px' }}>
+        <h3 style={{ 
+          fontSize: '18px', 
+          fontWeight: '600', 
+          color: '#1f2937', 
+          marginBottom: '8px',
+          margin: '0 0 8px 0'
+        }}>
+          Click on the sound that matches the instruction
         </h3>
-        <p className="text-sm text-gray-600">
-          Click the play button to listen, then select the matching option below
+        <p style={{ 
+          fontSize: '14px', 
+          color: '#6b7280',
+          margin: '0'
+        }}>
+          Listen to the sound and choose the correct animal ({progressText})
         </p>
       </div>
       
-      {/* Volume Control */}
-      <div className="nexcaptcha-volume-control mb-4 flex items-center gap-2">
-        <span className="text-sm text-gray-600">🔊</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.1"
-          value={volume}
-          onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-          className="w-20 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-        />
-        <span className="text-xs text-gray-500">{Math.round(volume * 100)}%</span>
-      </div>
-      
-      {/* Audio Clips */}
-      <div className="nexcaptcha-audio-clips mb-6">
-        <h4 className="text-md font-medium text-gray-700 mb-3">Audio Clips:</h4>
-        <div className="space-y-3">
-          {audioClips.map((clip, index) => {
-            const selectedOption = selectedMatches.get(clip.id);
-            const selectedOptionLabel = matchOptions.find(opt => opt.id === selectedOption)?.label;
-            const isLoading = audioLoadingStates.get(clip.id) || false;
-            
-            return (
-              <div key={clip.id} className={getAudioButtonClass(clip)}>
-                <button
-                  className={`nexcaptcha-play-button w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                    clip.isPlaying 
-                      ? 'bg-red-500 hover:bg-red-600 text-white' 
-                      : 'bg-blue-500 hover:bg-blue-600 text-white'
-                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={() => clip.isPlaying ? stopAudio(clip.id) : playAudio(clip.id)}
-                  disabled={disabled || isCompleted || isLoading}
-                  title={clip.isPlaying ? 'Stop' : 'Play'}
-                >
-                  {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : clip.isPlaying ? (
-                    '⏹'
-                  ) : (
-                    '▶'
-                  )}
-                </button>
-                
-                <div className="flex-1">
-                  <div className="font-medium text-gray-800">
-                    Audio Clip {index + 1}
-                  </div>
-                  {selectedOptionLabel && (
-                    <div className="text-sm text-gray-600">
-                      Matched to: {selectedOptionLabel}
-                    </div>
-                  )}
-                  {clip.hasBeenPlayed && (
-                    <div className="text-xs text-green-600">✓ Played</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+      {/* Current Sound Player */}
+      {currentSound && (
+        <div style={{
+          marginBottom: '20px',
+          padding: '16px',
+          border: '2px dashed #d1d5db',
+          borderRadius: '8px',
+          textAlign: 'center',
+          backgroundColor: '#f9fafb'
+        }}>
+          <div style={{ marginBottom: '12px', fontSize: '16px', fontWeight: '500' }}>
+            What animal makes this sound?
+          </div>
+          <button
+            onClick={() => currentSound.isPlaying ? stopAudio(currentSound.id) : playAnimalSound(currentSound.id)}
+            disabled={disabled || isCompleted}
+            style={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              border: 'none',
+              backgroundColor: currentSound.isPlaying ? '#ef4444' : theme?.primaryColor || '#3b82f6',
+              color: 'white',
+              fontSize: '24px',
+              cursor: disabled || isCompleted ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto',
+              transition: 'all 0.2s ease',
+              opacity: disabled || isCompleted ? 0.5 : 1
+            }}
+            onMouseOver={(e) => {
+              if (!disabled && !isCompleted) {
+                e.currentTarget.style.transform = 'scale(1.05)';
+              }
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            {currentSound.isPlaying ? '⏹' : '🔊'}
+          </button>
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+            {currentSound.isPlaying ? 'Playing...' : 'Click here (audio-matching)'}
+          </div>
         </div>
-      </div>
+      )}
       
-      {/* Match Options */}
-      <div className="nexcaptcha-match-options mb-6">
-        <h4 className="text-md font-medium text-gray-700 mb-3">Match Options:</h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {matchOptions.map(option => {
-            const matchedAudioId = Array.from(selectedMatches.entries())
-              .find(([_, optionId]) => optionId === option.id)?.[0];
+      {/* Animal Options */}
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '12px'
+        }}>
+          {animalOptions.map(option => {
+            let buttonStyle: React.CSSProperties = {
+              padding: '16px',
+              border: '2px solid',
+              borderRadius: '8px',
+              backgroundColor: 'white',
+              cursor: disabled || isCompleted ? 'not-allowed' : 'pointer',
+              textAlign: 'center',
+              transition: 'all 0.2s ease',
+              opacity: disabled || isCompleted ? 0.5 : 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '8px'
+            };
+
+            if (showFeedback) {
+              if (option.isSelected && option.isCorrect) {
+                buttonStyle.borderColor = '#10b981';
+                buttonStyle.backgroundColor = '#d1fae5';
+              } else if (option.isSelected && !option.isCorrect) {
+                buttonStyle.borderColor = '#ef4444';
+                buttonStyle.backgroundColor = '#fee2e2';
+              } else {
+                buttonStyle.borderColor = '#d1d5db';
+              }
+            } else {
+              if (option.isSelected) {
+                buttonStyle.borderColor = theme?.primaryColor || '#3b82f6';
+                buttonStyle.backgroundColor = '#dbeafe';
+              } else {
+                buttonStyle.borderColor = '#d1d5db';
+              }
+            }
             
             return (
-              <div
+              <button
                 key={option.id}
-                className={getMatchOptionClass(option)}
-                onClick={() => {
-                  if (currentAudioId && !disabled && !isCompleted) {
-                    handleMatchSelection(currentAudioId, option.id);
+                onClick={() => handleAnimalSelection(option.id)}
+                disabled={disabled || isCompleted || showFeedback}
+                style={buttonStyle}
+                onMouseOver={(e) => {
+                  if (!disabled && !isCompleted && !showFeedback) {
+                    e.currentTarget.style.transform = 'scale(1.02)';
+                    e.currentTarget.style.borderColor = theme?.primaryColor || '#3b82f6';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (!disabled && !isCompleted && !showFeedback) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    if (!option.isSelected) {
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                    }
                   }
                 }}
               >
-                {option.imageUrl && (
-                  <img
-                    src={option.imageUrl}
-                    alt={option.label}
-                    className="w-full h-20 object-cover rounded mb-2"
-                  />
-                )}
-                <div className="font-medium text-sm text-gray-800">
-                  {option.label}
+                <div style={{ fontSize: '32px' }}>{option.emoji}</div>
+                <div style={{ 
+                  fontSize: '14px', 
+                  fontWeight: '500',
+                  color: '#374151'
+                }}>
+                  {option.name}
                 </div>
-                {option.description && (
-                  <div className="text-xs text-gray-600 mt-1">
-                    {option.description}
-                  </div>
-                )}
-                {matchedAudioId && (
-                  <div className="text-xs text-blue-600 mt-1">
-                    ← Audio {audioClips.findIndex(c => c.id === matchedAudioId) + 1}
-                  </div>
-                )}
                 {showFeedback && option.isSelected && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs">
-                    {option.isCorrect ? (
-                      <span className="text-green-600 bg-white rounded-full w-full h-full flex items-center justify-center">✓</span>
-                    ) : (
-                      <span className="text-red-600 bg-white rounded-full w-full h-full flex items-center justify-center">✗</span>
-                    )}
+                  <div style={{
+                    fontSize: '12px',
+                    color: option.isCorrect ? '#10b981' : '#ef4444',
+                    fontWeight: '500'
+                  }}>
+                    {option.isCorrect ? '✓ Correct!' : '✗ Wrong'}
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
       
-      {/* Instructions */}
-      {currentAudioId && (
-        <div className="nexcaptcha-current-instruction mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm text-blue-800">
-            Now select the option that matches Audio Clip {audioClips.findIndex(c => c.id === currentAudioId) + 1}
-          </p>
-        </div>
-      )}
-      
-      {/* Submit Button */}
-      <div className="nexcaptcha-puzzle-controls">
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm text-gray-600">
-            Matched: {selectedMatches.size} / {audioClips.length}
-            {attempts > 0 && (
-              <span className="ml-2 text-gray-500">
-                (Attempt {attempts + 1})
-              </span>
-            )}
-          </div>
+      {/* Progress and Status */}
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '14px',
+          color: '#6b7280',
+          marginBottom: '8px'
+        }}>
+          <span>Attempts: {attempts}</span>
+          <span>Progress: {currentSoundIndex + 1}/{animalSounds.length}</span>
         </div>
         
-        <button
-          className={`nexcaptcha-submit-button px-6 py-2 rounded-md font-medium transition-colors ${
-            selectedMatches.size === audioClips.length && !showFeedback
-              ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
-          onClick={handleSubmit}
-          disabled={selectedMatches.size !== audioClips.length || showFeedback}
-        >
-          Submit Matches
-        </button>
-      </div>
-      
-      {/* Feedback */}
-      {showFeedback && (
-        <div className="nexcaptcha-feedback mt-4 p-3 rounded-md">
-          {isCompleted ? (
-            <div className="bg-green-100 border border-green-300 text-green-800">
-              <div className="flex items-center">
-                <span className="text-green-600 mr-2">✓</span>
-                <span className="font-medium">Perfect! All matches are correct.</span>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-red-100 border border-red-300 text-red-800">
-              <div className="flex items-center">
-                <span className="text-red-600 mr-2">✗</span>
-                <span className="font-medium">Some matches are incorrect. Try again!</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {/* Completion Overlay */}
-      {isCompleted && (
-        <div className="absolute inset-0 bg-green-100 bg-opacity-75 flex items-center justify-center rounded-lg">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-            <div className="text-green-600 text-3xl mb-3">🎵</div>
-            <div className="text-lg font-medium text-gray-800 mb-2">
-              Audio puzzle completed!
-            </div>
-            <div className="text-sm text-gray-600">
-              {attempts} attempt{attempts !== 1 ? 's' : ''} in {Math.round((Date.now() - startTime) / 1000)}s
+
+        
+        {showFeedback && !isCompleted && (
+          <div style={{
+            marginTop: '12px',
+            padding: '12px',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '6px',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              fontSize: '14px',
+              color: '#374151',
+              marginBottom: '8px'
+            }}>
+              {selectedAnimal && animalOptions.find(opt => opt.id === selectedAnimal)?.isCorrect 
+                ? 'Great! Moving to next sound...' 
+                : 'Try again!'}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      
     </div>
   );
 };
