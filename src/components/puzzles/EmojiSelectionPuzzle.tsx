@@ -117,6 +117,7 @@ export const EmojiSelectionPuzzle: React.FC<EmojiSelectionPuzzleProps> = ({
       const timeSpent = Date.now() - startTime;
       
       setTimeout(() => {
+        setIsValidating(false);
         onComplete({
           success: true,
           timeSpent,

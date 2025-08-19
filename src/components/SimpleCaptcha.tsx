@@ -204,20 +204,25 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
   const performVerification = useCallback(async () => {
     if (state.isVerified || state.isLoading || disabled) return;
 
+    console.log('Starting verification process...');
     setState(prev => ({ ...prev, isLoading: true, startTime: Date.now() }));
 
     try {
       // Step 1: Behavioral analysis
       const behavioralScore = calculateBehavioralScore();
+      console.log('Behavioral score:', behavioralScore);
       
       // Step 2: Proof of work
       const proofOfWorkResult = await performProofOfWork();
+      console.log('Proof of work result:', proofOfWorkResult);
       
       // Step 3: Check puzzle completion
       const puzzleResult = state.puzzleCompleted;
+      console.log('Puzzle completed:', puzzleResult);
       
       // Calculate overall success
       const success = behavioralScore > 30 && proofOfWorkResult && puzzleResult;
+      console.log('Overall success:', success, { behavioralScore, proofOfWorkResult, puzzleResult });
       
       setState(prev => ({
         ...prev,
@@ -225,16 +230,20 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
         isVerified: success,
         behavioralScore,
         proofOfWorkCompleted: proofOfWorkResult,
+        puzzleCompleted: success ? prev.puzzleCompleted : false,
         attempts: prev.attempts + 1,
       }));
       
+      console.log('Verification completed, success:', success);
       // Return simple boolean result
       onVerify?.(success);
       
     } catch (error) {
+      console.error('Verification error:', error);
       setState(prev => ({
         ...prev,
         isLoading: false,
+        puzzleCompleted: false,
         attempts: prev.attempts + 1,
       }));
       onVerify?.(false);
@@ -248,6 +257,8 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
       return () => document.removeEventListener('mousemove', trackMouseMovement);
     }
   }, [state.isVisible, trackMouseMovement]);
+
+
 
   // Handle checkbox click
   const handleCheckboxClick = useCallback(() => {
@@ -416,7 +427,6 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
               theme={EMBEDDED_CONFIG.theme}
               onComplete={() => {
                 setState(prev => ({ ...prev, puzzleCompleted: true }));
-                setTimeout(() => performVerification(), 500);
               }}
               onInteraction={() => {}}
               disabled={state.puzzleCompleted}
@@ -429,7 +439,6 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
               theme={EMBEDDED_CONFIG.theme}
               onComplete={() => {
                 setState(prev => ({ ...prev, puzzleCompleted: true }));
-                setTimeout(() => performVerification(), 500);
               }}
               onInteraction={() => {}}
               disabled={state.puzzleCompleted}
@@ -442,7 +451,6 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
               theme={EMBEDDED_CONFIG.theme}
               onComplete={() => {
                 setState(prev => ({ ...prev, puzzleCompleted: true }));
-                setTimeout(() => performVerification(), 500);
               }}
               onInteraction={() => {}}
               disabled={state.puzzleCompleted}
@@ -455,7 +463,6 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
               theme={EMBEDDED_CONFIG.theme}
               onComplete={() => {
                 setState(prev => ({ ...prev, puzzleCompleted: true }));
-                setTimeout(() => performVerification(), 500);
               }}
               onInteraction={() => {}}
               disabled={state.puzzleCompleted}
@@ -468,17 +475,15 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
               theme={EMBEDDED_CONFIG.theme}
               onComplete={() => {
                 setState(prev => ({ ...prev, puzzleCompleted: true }));
-                setTimeout(() => performVerification(), 500);
               }}
               onInteraction={() => {}}
               disabled={state.puzzleCompleted}
             />
           )}
           
-          {state.puzzleCompleted && (
+          {state.puzzleCompleted && !state.isLoading && (
             <button
               onClick={performVerification}
-              disabled={state.isLoading}
               style={{
                 marginTop: '12px',
                 padding: '8px 16px',
@@ -486,14 +491,30 @@ export const SimpleCaptcha: React.FC<SimpleCaptchaProps> = ({
                 color: 'white',
                 border: 'none',
                 borderRadius: EMBEDDED_CONFIG.theme.borderRadius,
-                cursor: state.isLoading ? 'not-allowed' : 'pointer',
                 fontSize: '14px',
                 fontWeight: '500',
-                opacity: state.isLoading ? 0.6 : 1,
+                cursor: 'pointer',
+                width: '100%',
               }}
             >
-              {state.isLoading ? 'Verifying...' : 'Verify'}
+              Verify
             </button>
+          )}
+          
+          {state.puzzleCompleted && state.isLoading && (
+            <div style={{
+              marginTop: '12px',
+              padding: '8px 16px',
+              backgroundColor: '#f3f4f6',
+              color: '#6b7280',
+              border: 'none',
+              borderRadius: EMBEDDED_CONFIG.theme.borderRadius,
+              fontSize: '14px',
+              fontWeight: '500',
+              textAlign: 'center',
+            }}>
+              Verifying...
+            </div>
           )}
         </div>
       )}

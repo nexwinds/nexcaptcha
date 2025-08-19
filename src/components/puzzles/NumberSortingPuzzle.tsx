@@ -42,7 +42,7 @@ export const NumberSortingPuzzle: React.FC<NumberSortingPuzzleProps> = ({
   const [swaps, setSwaps] = useState(0);
   const [startTime] = useState(Date.now());
   const [isCompleted, setIsCompleted] = useState(false);
-  const [showHint, setShowHint] = useState(false);
+
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
@@ -301,15 +301,7 @@ export const NumberSortingPuzzle: React.FC<NumberSortingPuzzleProps> = ({
       
       <div className="nexcaptcha-puzzle-stats flex justify-between items-center mb-4 text-sm text-gray-600">
         <div>Swaps: {swaps}</div>
-        <div>Progress: {getProgressPercentage()}%</div>
         <div className="flex gap-2">
-          <button
-            className="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
-            onClick={() => setShowHint(!showHint)}
-            disabled={disabled || isCompleted}
-          >
-            {showHint ? 'Hide' : 'Show'} Hint
-          </button>
           <button
             className="px-3 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors"
             onClick={handleReset}
@@ -320,15 +312,7 @@ export const NumberSortingPuzzle: React.FC<NumberSortingPuzzleProps> = ({
         </div>
       </div>
       
-      {showHint && (
-        <div className="nexcaptcha-hint mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-          <p className="text-sm text-blue-800">
-            Target order: {[...challenge.numbers]
-              .sort((a, b) => challenge.sortOrder === 'asc' ? a - b : b - a)
-              .join(' → ')}
-          </p>
-        </div>
-      )}
+
       
       <div className="nexcaptcha-numbers-container">
         <div className="flex flex-wrap gap-3 justify-center mb-4">
